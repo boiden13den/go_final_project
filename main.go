@@ -1,23 +1,22 @@
 package main
 
 import (
-	"fmt"
-	"net/http"
+	"log"
+	"main/pkg/db"
+	"main/pkg/server"
 	"os"
 )
 
 func main() {
-	webDir := "./web"
-	port := os.Getenv("TODO_PORT")
-	if port == "" {
-		port = "7540"
+	dbFile := os.Getenv("TODO_DBFILE")
+	if dbFile == "" {
+		dbFile = "scheduler.db"
 	}
-
-	http.Handle("/", http.FileServer(http.Dir(webDir)))
-
-	fmt.Printf("Starting server on :%s\n", port)
-	if err := http.ListenAndServe(":"+port, nil); err != nil {
-		fmt.Fprintf(os.Stderr, "server error: %v\n", err)
-		os.Exit(1)
+	_, err := os.Stat(dbFile)
+	if err := db.InitDB(dbFile, err != nil); err != nil {
+		log.Fatal(err)
 	}
+	defer db.DB.Close()
+
+	server.App()
 }
