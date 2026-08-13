@@ -1,6 +1,9 @@
 package db
 
-import "database/sql"
+import (
+	"database/sql"
+	"log"
+)
 
 type Task struct {
 	ID      string `json:"id"`
@@ -24,4 +27,26 @@ func AddTask(task *Task) (int64, error) {
 		id, err = res.LastInsertId()
 	}
 	return id, err
+}
+
+func Tasks(limit int) ([]*Task, error) {
+	var rows []*Task
+	query := `SELECT * FROM scheduler ORDER BY date LIMIT :limit `
+	res, err := DB.Query(query, sql.Named("limit", limit))
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
+	defer res.Close()
+	for res.Next() {
+		row := Task{}
+		err := res.Scan(&row.ID, &row.Date, &row.Title, &row.Comment, &row.Repeat)
+		if err != nil {
+			log.Println(err)
+			return nil, err
+		}
+		rows = append(rows, &row)
+	}
+
+	return rows, nil
 }
