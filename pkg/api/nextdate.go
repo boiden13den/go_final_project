@@ -11,6 +11,7 @@ import (
 
 const DateFormat = "20060102"
 
+// nextDayHandler parses the query parameters and writes the result of NextDate to the response.
 func nextDayHandler(w http.ResponseWriter, r *http.Request) {
 	nowStr := r.FormValue("now")
 	date := r.FormValue("date")
@@ -34,6 +35,7 @@ func nextDayHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, result)
 }
 
+// NextDate calculates the next date after `now` based on the initial `date` and `repeat` rules.
 func NextDate(now time.Time, dstart string, repeat string) (string, error) {
 	if repeat == "" {
 		return "", errors.New("repeat is empty")
@@ -143,10 +145,12 @@ func NextDate(now time.Time, dstart string, repeat string) (string, error) {
 	return date.Format(DateFormat), nil
 }
 
+// lastDay returns the number of the last day of the month for the given time
 func lastDay(t time.Time) int {
 	return time.Date(t.Year(), t.Month()+1, 0, 0, 0, 0, 0, t.Location()).Day()
 }
 
+// containsNeg reports whether s contains the specified negative number.
 func containsNeg(s string, n int) bool {
 	return strings.Contains(s, strconv.Itoa(n))
 }

@@ -13,7 +13,8 @@ func App() {
 	if port == "" {
 		port = "7540"
 	}
-	api.Init()
-	http.Handle("/", http.FileServer(http.Dir("./web")))
-	log.Fatal(http.ListenAndServe(":"+port, nil))
+	mux := http.NewServeMux()
+	api.Init(mux)
+	mux.Handle("/", http.FileServer(http.Dir("./web")))
+	log.Fatal(http.ListenAndServe(":"+port, mux))
 }

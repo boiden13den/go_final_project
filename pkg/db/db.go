@@ -17,6 +17,7 @@ CREATE INDEX scheduler_date ON scheduler (date);`
 
 var DB *sql.DB
 
+// InitDB initialize database connection
 func InitDB(path string, install bool) error {
 	var err error
 	DB, err = sql.Open("sqlite", path)
