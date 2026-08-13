@@ -2,6 +2,7 @@ package db
 
 import (
 	"database/sql"
+	"fmt"
 	"log"
 	"time"
 )
@@ -44,8 +45,8 @@ func Tasks(limit int, search string) ([]*Task, error) {
 			)
 		} else {
 			res, err = DB.Query(
-				`SELECT id, date, title, comment, repeat FROM scheduler WHERE title LIKE :search OR comment LIKE :search ORDER BY date LIMIT :limit`,
-				sql.Named("search", "%"+search+"%"), sql.Named("limit", limit),
+				`SELECT id, date, title, comment, repeat FROM scheduler WHERE title LIKE %:search% OR comment LIKE %:search% ORDER BY date LIMIT :limit`,
+				sql.Named("search", search), sql.Named("limit", limit),
 			)
 		}
 	} else {
@@ -71,4 +72,40 @@ func Tasks(limit int, search string) ([]*Task, error) {
 	}
 
 	return rows, nil
+}
+
+func GetTask(id string) (*Task, error) {
+	var task = &Task{}
+	err := DB.QueryRow(
+		`SELECT id, date, title, comment, repeat FROM scheduler WHERE id = :id`,
+		sql.Named("id", id)).Scan(&task.ID, &task.Date, &task.Title, &task.Comment, &task.Repeat)
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
+	return task, nil
+}
+
+func UpdateTask(task *Task) error {
+	// параметры пропущены, не забудьте указать WHERE
+	query := `UPDATE scheduler SET date = :date, title = :title, comment = :comment, repeat = :repeat WHERE id = :id`
+	res, err := DB.Exec(query,
+		sql.Named("date", task.Date),
+		sql.Named("title", task.Title),
+		sql.Named("comment", task.Comment),
+		sql.Named("repeat", task.Repeat),
+		sql.Named("id", task.ID))
+	if err != nil {
+		return err
+	}
+	// метод RowsAffected() возвращает количество записей к которым
+	// была применена SQL команда
+	count, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if count == 0 {
+		return fmt.Errorf(`incorrect id for updating task`)
+	}
+	return nil
 }
