@@ -16,5 +16,6 @@ func App() {
 	mux := http.NewServeMux()
 	api.Init(mux)
 	mux.Handle("/", http.FileServer(http.Dir("./web")))
+	log.Printf("Server starting on port %s", port)
 	log.Fatal(http.ListenAndServe(":"+port, mux))
 }

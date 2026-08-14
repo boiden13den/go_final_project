@@ -45,8 +45,8 @@ func Tasks(limit int, search string) ([]*Task, error) {
 			)
 		} else {
 			res, err = DB.Query(
-				`SELECT id, date, title, comment, repeat FROM scheduler WHERE title LIKE %:search% OR comment LIKE %:search% ORDER BY date LIMIT :limit`,
-				sql.Named("search", search), sql.Named("limit", limit),
+				`SELECT id, date, title, comment, repeat FROM scheduler WHERE title LIKE :search OR comment LIKE :search ORDER BY date LIMIT :limit`,
+				sql.Named("search", "%"+search+"%"), sql.Named("limit", limit),
 			)
 		}
 	} else {
