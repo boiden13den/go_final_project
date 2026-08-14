@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	"errors"
 	"log"
 	"main/pkg/db"
 	"net/http"
@@ -18,6 +19,8 @@ func taskHandler(w http.ResponseWriter, r *http.Request) {
 
 	case http.MethodPut:
 		updateTaskHandler(w, r)
+	case http.MethodDelete:
+		deleteTaskHandler(w, r)
 	}
 }
 
@@ -59,7 +62,6 @@ func checkDate(task *db.Task) error {
 			return err
 		}
 	}
-	// если дата в прошлом (t < now)
 	if !t.After(now) && t.Format(DateFormat) != now.Format(DateFormat) {
 		if task.Repeat == "" {
 			task.Date = now.Format(DateFormat)
@@ -78,17 +80,11 @@ func writeJson(w http.ResponseWriter, data any) {
 }
 
 func getTaskHandler(w http.ResponseWriter, r *http.Request) {
-	id := r.URL.Query().Get("id")
-	if id == "" {
-		writeJson(w, map[string]any{"error": "Не указан идентификатор"})
-		return
-	}
-	tasks, err := db.GetTask(id)
+	task, err := getTask(w, r)
 	if err != nil {
-		writeJson(w, map[string]any{"error": "Задача не найдена"})
 		return
 	}
-	writeJson(w, tasks)
+	writeJson(w, task)
 }
 
 func updateTaskHandler(w http.ResponseWriter, r *http.Request) {
@@ -121,4 +117,61 @@ func updateTaskHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJson(w, map[string]any{"id": task.ID})
+}
+
+func deleteTaskHandler(w http.ResponseWriter, r *http.Request) {
+	task, err := getTask(w, r)
+	if err != nil {
+		return
+	}
+	err = db.DeleteTask(task.ID)
+	if err != nil {
+		writeJson(w, map[string]any{"error": err.Error()})
+		return
+	}
+	writeJson(w, map[string]any{})
+}
+
+func taskDoneHandler(w http.ResponseWriter, r *http.Request) {
+	task, err := getTask(w, r)
+	if err != nil {
+		return
+	}
+	if task.Repeat == "" {
+		err = db.DeleteTask(task.ID)
+		if err != nil {
+			writeJson(w, map[string]any{"error": err.Error()})
+			return
+		}
+		writeJson(w, map[string]any{})
+		return // ← вот этого return не было
+	}
+	next, err := NextDate(time.Now(), task.Date, task.Repeat)
+	if err != nil {
+		writeJson(w, map[string]any{"error": err.Error()})
+		return
+	}
+	task.Date = next
+	err = db.UpdateTask(task)
+	if err != nil {
+		writeJson(w, map[string]any{"error": err.Error()})
+		return
+	}
+	writeJson(w, map[string]any{})
+}
+
+func getTask(w http.ResponseWriter, r *http.Request) (*db.Task, error) {
+	id := r.URL.Query().Get("id")
+	if id == "" {
+		writeJson(w, map[string]any{"error": "Не указан идентификатор"})
+		log.Println(map[string]any{"error": "Не указан идентификатор"})
+		return nil, errors.New("errGettask")
+	}
+	task, err := db.GetTask(id)
+	if err != nil {
+		log.Println("error: Не указан идентификатор")
+		writeJson(w, map[string]any{"error": "Задача не найдена"})
+		return nil, errors.New("errGettask")
+	}
+	return task, nil
 }

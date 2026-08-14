@@ -18,7 +18,6 @@ type Task struct {
 // AddTask add new task to database
 func AddTask(task *Task) (int64, error) {
 	var id int64
-	// определите запрос
 	query := `INSERT INTO scheduler (date, title, comment, repeat) VALUES (:date, :title, :comment, :repeat)`
 	res, err := DB.Exec(query,
 		sql.Named("date", task.Date),
@@ -31,6 +30,7 @@ func AddTask(task *Task) (int64, error) {
 	return id, err
 }
 
+// Tasks return all tasks from database
 func Tasks(limit int, search string) ([]*Task, error) {
 	var rows []*Task
 	var res *sql.Rows
@@ -74,6 +74,7 @@ func Tasks(limit int, search string) ([]*Task, error) {
 	return rows, nil
 }
 
+// GetTask return task by id
 func GetTask(id string) (*Task, error) {
 	var task = &Task{}
 	err := DB.QueryRow(
@@ -86,8 +87,8 @@ func GetTask(id string) (*Task, error) {
 	return task, nil
 }
 
+// UpdateTask update task by id
 func UpdateTask(task *Task) error {
-	// параметры пропущены, не забудьте указать WHERE
 	query := `UPDATE scheduler SET date = :date, title = :title, comment = :comment, repeat = :repeat WHERE id = :id`
 	res, err := DB.Exec(query,
 		sql.Named("date", task.Date),
@@ -98,14 +99,29 @@ func UpdateTask(task *Task) error {
 	if err != nil {
 		return err
 	}
-	// метод RowsAffected() возвращает количество записей к которым
-	// была применена SQL команда
+
 	count, err := res.RowsAffected()
 	if err != nil {
 		return err
 	}
 	if count == 0 {
 		return fmt.Errorf(`incorrect id for updating task`)
+	}
+	return nil
+}
+
+// DeleteTask delete task by id
+func DeleteTask(id string) error {
+	res, err := DB.Exec(`DELETE FROM scheduler WHERE id = :id`, sql.Named("id", id))
+	if err != nil {
+		return err
+	}
+	count, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if count == 0 {
+		return fmt.Errorf(`incorrect id for deleting task`)
 	}
 	return nil
 }
