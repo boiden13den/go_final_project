@@ -13,10 +13,13 @@ const DateFormat = "20060102"
 
 // nextDayHandler parses the query parameters and writes the result of NextDate to the response.
 func nextDayHandler(w http.ResponseWriter, r *http.Request) {
+<<<<<<< HEAD
 	if r.Method != http.MethodGet {
 		http.Error(w, "invalid request method", http.StatusMethodNotAllowed)
 		return
 	}
+=======
+>>>>>>> 1ec9f59b5b6f58a7bd148c21a317831a3eade709
 	nowStr := r.FormValue("now")
 	date := r.FormValue("date")
 	repeat := r.FormValue("repeat")
