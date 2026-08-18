@@ -13,13 +13,10 @@ const DateFormat = "20060102"
 
 // nextDayHandler parses the query parameters and writes the result of NextDate to the response.
 func nextDayHandler(w http.ResponseWriter, r *http.Request) {
-<<<<<<< HEAD
 	if r.Method != http.MethodGet {
 		http.Error(w, "invalid request method", http.StatusMethodNotAllowed)
 		return
 	}
-=======
->>>>>>> 1ec9f59b5b6f58a7bd148c21a317831a3eade709
 	nowStr := r.FormValue("now")
 	date := r.FormValue("date")
 	repeat := r.FormValue("repeat")
@@ -128,6 +125,25 @@ func NextDate(now time.Time, dstart string, repeat string) (string, error) {
 			for i := 1; i <= 12; i++ {
 				monthAllowed[i] = true
 			}
+		}
+		reachable := false
+		for m := 1; m <= 12 && !reachable; m++ {
+			if !monthAllowed[m] {
+				continue
+			}
+			maxDay := lastDay(time.Date(now.Year(), time.Month(m), 1, 0, 0, 0, 0, now.Location()))
+			for d := 1; d <= 31; d++ {
+				if dayAllowed[d] && d <= maxDay {
+					reachable = true
+					break
+				}
+			}
+			if containsNeg(parts[1], -1) || containsNeg(parts[1], -2) {
+				reachable = true
+			}
+		}
+		if !reachable {
+			return "", errors.New("m: no valid day exists in allowed months")
 		}
 		for {
 			date = date.AddDate(0, 0, 1)

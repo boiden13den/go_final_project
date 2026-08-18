@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"os"
 
 	"github.com/golang-jwt/jwt/v5"
 )
@@ -21,11 +20,11 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 		Password string `json:"password"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeJson(w, map[string]any{"error": err.Error()})
+		writeJson(w, http.StatusBadRequest, map[string]any{"error": err.Error()})
 		return
 	}
-	if req.Password != os.Getenv("TODO_PASSWORD") {
-		writeJson(w, map[string]any{"error": "Неверный пароль"})
+	if req.Password != appPassword {
+		writeJson(w, http.StatusUnauthorized, map[string]any{"error": "Неверный пароль"})
 		return
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
@@ -33,16 +32,15 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 	})
 	signed, err := token.SignedString(jwtSecret)
 	if err != nil {
-		writeJson(w, map[string]any{"error": err.Error()})
+		writeJson(w, http.StatusInternalServerError, map[string]any{"error": err.Error()})
 		return
 	}
-	writeJson(w, map[string]any{"token": signed})
+	writeJson(w, http.StatusOK, map[string]any{"token": signed})
 }
 
 func auth(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		pass := os.Getenv("TODO_PASSWORD")
-		if pass == "" {
+		if appPassword == "" {
 			next(w, r)
 			return
 		}
@@ -62,7 +60,7 @@ func auth(next http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 		claims, ok := token.Claims.(jwt.MapClaims)
-		if !ok || claims["hash"] != passHash(pass) {
+		if !ok || claims["hash"] != passHash(appPassword) {
 			http.Error(w, "Authentification required", http.StatusUnauthorized)
 			return
 		}

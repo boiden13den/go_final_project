@@ -18,5 +18,7 @@ func main() {
 	}
 	defer db.DB.Close()
 
-	server.App()
+	if err := server.App(); err != nil {
+		log.Fatal(err)
+	}
 }

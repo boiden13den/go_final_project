@@ -25,7 +25,10 @@ func InitDB(path string, install bool) error {
 		return err
 	}
 	if install {
-		_, err = DB.Exec(schema)
+		if _, err = DB.Exec(schema); err != nil {
+			DB.Close()
+			return err
+		}
 	}
-	return err
+	return nil
 }

@@ -8,14 +8,15 @@ import (
 )
 
 // Starts the server
-func App() {
+func App() error {
 	port := os.Getenv("TODO_PORT")
 	if port == "" {
 		port = "7540"
 	}
+	password := os.Getenv("TODO_PASSWORD")
 	mux := http.NewServeMux()
-	api.Init(mux)
+	api.Init(mux, password)
 	mux.Handle("/", http.FileServer(http.Dir("./web")))
 	log.Printf("Server starting on port %s", port)
-	log.Fatal(http.ListenAndServe(":"+port, mux))
+	return http.ListenAndServe(":"+port, mux)
 }

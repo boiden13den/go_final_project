@@ -3,7 +3,6 @@ package db
 import (
 	"database/sql"
 	"fmt"
-	"log"
 	"time"
 )
 
@@ -36,41 +35,38 @@ func Tasks(limit int, search string) ([]*Task, error) {
 	var res *sql.Rows
 	var err error
 
-	if search != "" {
-		date, err := time.Parse("02.01.2006", search)
-		if err == nil {
-			res, err = DB.Query(
-				`SELECT id, date, title, comment, repeat FROM scheduler WHERE date = :search ORDER BY date LIMIT :limit`,
-				sql.Named("search", date.Format("20060102")), sql.Named("limit", limit),
-			)
-		} else {
-			res, err = DB.Query(
-				`SELECT id, date, title, comment, repeat FROM scheduler WHERE title LIKE :search OR comment LIKE :search ORDER BY date LIMIT :limit`,
-				sql.Named("search", "%"+search+"%"), sql.Named("limit", limit),
-			)
-		}
-	} else {
+	switch date, parseErr := time.Parse("02.01.2006", search); {
+	case search == "":
 		res, err = DB.Query(
 			`SELECT id, date, title, comment, repeat FROM scheduler ORDER BY date LIMIT :limit`,
 			sql.Named("limit", limit),
 		)
+	case parseErr == nil:
+		res, err = DB.Query(
+			`SELECT id, date, title, comment, repeat FROM scheduler WHERE date = :search ORDER BY date LIMIT :limit`,
+			sql.Named("search", date.Format("20060102")), sql.Named("limit", limit),
+		)
+	default:
+		res, err = DB.Query(
+			`SELECT id, date, title, comment, repeat FROM scheduler WHERE title LIKE :search OR comment LIKE :search ORDER BY date LIMIT :limit`,
+			sql.Named("search", "%"+search+"%"), sql.Named("limit", limit),
+		)
 	}
 	if err != nil {
-		log.Println(err)
 		return nil, err
 	}
 	defer res.Close()
 
 	for res.Next() {
 		row := Task{}
-		err = res.Scan(&row.ID, &row.Date, &row.Title, &row.Comment, &row.Repeat)
-		if err != nil {
-			log.Println(err)
+		if err = res.Scan(&row.ID, &row.Date, &row.Title, &row.Comment, &row.Repeat); err != nil {
 			return nil, err
 		}
 		rows = append(rows, &row)
 	}
-
+	if err = res.Err(); err != nil {
+		return nil, err
+	}
 	return rows, nil
 }
 
@@ -81,7 +77,6 @@ func GetTask(id string) (*Task, error) {
 		`SELECT id, date, title, comment, repeat FROM scheduler WHERE id = :id`,
 		sql.Named("id", id)).Scan(&task.ID, &task.Date, &task.Title, &task.Comment, &task.Repeat)
 	if err != nil {
-		log.Println(err)
 		return nil, err
 	}
 	return task, nil
